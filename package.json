@@ -1,0 +1,16 @@
+{
+  "name": "archibald-bot",
+  "version": "1.0.0",
+  "description": "Archibald — Discord AI assistant for Ryljn's mentorship community",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3"
+  }
+}
