@@ -129,6 +129,7 @@ discord.on(Events.MessageCreate, async (message) => {
       const thread = await message.startThread({
         name: `${message.author.username} — Archibald`,
         autoArchiveDuration: 60, // archives after 60 mins of inactivity
+        type: 12, // 12 = GUILD_PRIVATE_THREAD
         reason: 'Private Archibald session',
       });
 
