@@ -120,42 +120,66 @@ discord.on(Events.MessageCreate, async (message) => {
   // Only react to @mentions of Archibald
   if (!message.mentions.has(discord.user)) return;
 
-  // Only respond in the designated chat channel
-  if (message.channelId !== process.env.CHAT_CHANNEL_ID) return;
+  // If already inside a thread, just respond — no need to create another
+  const inThread = message.channel.isThread();
 
-  // Strip the @mention to get the actual question
-  const question = message.content
-    .replace(`<@${discord.user.id}>`, '')
-    .replace(`<@!${discord.user.id}>`, '')
-    .trim();
+  // If in the main chat channel, create a private thread for this user
+  if (!inThread && message.channelId === process.env.CHAT_CHANNEL_ID) {
+    try {
+      const thread = await message.startThread({
+        name: `${message.author.username} — Archibald`,
+        autoArchiveDuration: 60, // archives after 60 mins of inactivity
+        reason: 'Private Archibald session',
+      });
 
-  if (!question) {
-    await message.reply(
-      "Hey! What's on your mind? Ask me anything about AI, agency growth, or automation 🤖"
-    );
+      const question = message.content
+        .replace(`<@${discord.user.id}>`, '')
+        .replace(`<@!${discord.user.id}>`, '')
+        .trim();
+
+      await thread.sendTyping();
+
+      if (!question) {
+        await thread.send(`Hey ${message.author.username}, what's going on? What are you working on right now?`);
+        return;
+      }
+
+      const reply = await generateChatReply(message.author.username, question);
+      if (reply.length > 2000) {
+        const chunks = reply.match(/[\s\S]{1,2000}/g);
+        for (const chunk of chunks) await thread.send(chunk);
+      } else {
+        await thread.send(reply);
+      }
+    } catch (err) {
+      console.error('Failed to create thread or reply:', err.message);
+      await message.reply("Something went wrong on my end. Try again in a second.");
+    }
     return;
   }
 
-  try {
-    await message.channel.sendTyping();
-    const reply = await generateChatReply(message.author.username, question);
+  // Inside an existing thread — respond normally
+  if (inThread) {
+    const question = message.content
+      .replace(`<@${discord.user.id}>`, '')
+      .replace(`<@!${discord.user.id}>`, '')
+      .trim();
 
-    // Reply so the user gets pinged
-    if (reply.length > 2000) {
-      // First chunk as a reply, rest as follow-up messages
-      const chunks = reply.match(/[\s\S]{1,2000}/g);
-      await message.reply(chunks[0]);
-      for (const chunk of chunks.slice(1)) {
-        await message.channel.send(chunk);
+    if (!question) return;
+
+    try {
+      await message.channel.sendTyping();
+      const reply = await generateChatReply(message.author.username, question);
+      if (reply.length > 2000) {
+        const chunks = reply.match(/[\s\S]{1,2000}/g);
+        for (const chunk of chunks) await message.channel.send(chunk);
+      } else {
+        await message.channel.send(reply);
       }
-    } else {
-      await message.reply(reply);
+    } catch (err) {
+      console.error('Failed to generate chat reply:', err.message);
+      await message.channel.send("Something went wrong on my end. Try again in a second.");
     }
-  } catch (err) {
-    console.error('Failed to generate chat reply:', err.message);
-    await message.reply(
-      "Hmm, something glitched on my end. Give it another shot in a sec! 🤖"
-    );
   }
 });
 
