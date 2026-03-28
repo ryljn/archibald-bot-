@@ -126,10 +126,11 @@ discord.on(Events.MessageCreate, async (message) => {
   // If in the main chat channel, create a private thread for this user
   if (!inThread && message.channelId === process.env.CHAT_CHANNEL_ID) {
     try {
-      const thread = await message.startThread({
+      const thread = await message.channel.threads.create({
         name: `${message.author.username} — Archibald`,
-        autoArchiveDuration: 60, // archives after 60 mins of inactivity
+        autoArchiveDuration: 60,
         type: 12, // 12 = GUILD_PRIVATE_THREAD
+        invitable: false, // only the bot and mods can add people
         reason: 'Private Archibald session',
       });
 
